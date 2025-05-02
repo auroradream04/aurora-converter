@@ -1,0 +1,23 @@
+{
+  "name": "aurora-converter",
+  "version": "1.0.0",
+  "description": "A terminal-based image converter that converts images to WebP format",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "ts-node src/main.ts",
+    "watch": "tsc -w"
+  },
+  "keywords": ["image", "converter", "webp", "sharp"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "sharp": "^0.33.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+} 
