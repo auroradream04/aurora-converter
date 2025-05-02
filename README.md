@@ -16,7 +16,7 @@ A terminal-based image converter that converts images to WebP format with config
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/aurora-converter.git
+git clone https://github.com/auroradream04/aurora-converter.git
 cd aurora-converter
 
 # Install dependencies
