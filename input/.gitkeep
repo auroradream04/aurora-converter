@@ -1,0 +1,10 @@
+# Aurora Image Converter - Input Directory
+
+Place your images in this directory to convert them to WebP format.
+
+Supported input formats:
+- JPG/JPEG
+- PNG
+- GIF
+
+The converter will preserve your directory structure in the output folder. 
