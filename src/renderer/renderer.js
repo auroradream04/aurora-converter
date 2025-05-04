@@ -278,6 +278,13 @@ function showResults(fileCount, originalSize, finalSize, savedPercent) {
   resultsOriginalSize.textContent = formatBytes(originalSize);
   resultsFinalSize.textContent = formatBytes(finalSize);
   resultsSavedPercent.textContent = `${savedPercent}%`;
+  
+  // Make the percent text color reflect the amount of savings
+  if (parseFloat(savedPercent) > 50) {
+    resultsSavedPercent.classList.add('highlight');
+  } else {
+    resultsSavedPercent.classList.remove('highlight');
+  }
 }
 
 function addToLog(type, message) {
