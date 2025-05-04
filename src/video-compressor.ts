@@ -42,6 +42,10 @@ export class VideoCompressor {
   private originalTotalSize: number = 0;
   private finalTotalSize: number = 0;
   private debug: boolean = true;
+  private progressCallback?: (progress: number, message: string) => void;
+  private totalVideos: number = 0;
+  private currentVideoIndex: number = 0;
+  public ffmpegPath: string | null = ffmpegPath;
 
   constructor(options: VideoCompressorOptions = {}) {
     this.crf = options.crf ?? 23;  // Default CRF value (lower = better quality, higher = smaller size)
@@ -52,14 +56,43 @@ export class VideoCompressor {
   }
 
   private log = {
-    info: (message: string) => console.log(`${colors.cyan}${message}${colors.reset}`),
-    success: (message: string) => console.log(`${colors.green}${message}${colors.reset}`),
-    warning: (message: string) => console.log(`${colors.yellow}${message}${colors.reset}`),
-    error: (message: string) => console.error(`${colors.red}${colors.bold}ERROR: ${message}${colors.reset}`),
-    header: (message: string) => console.log(`\n${colors.bold}${colors.blue}${message}${colors.reset}`),
-    detail: (message: string) => console.log(`  ${colors.white}${message}${colors.reset}`),
-    progress: (message: string) => process.stdout.write(`${colors.magenta}${message}${colors.reset}`)
+    info: (message: string) => {
+      console.log(`${colors.cyan}${message}${colors.reset}`);
+      this.progressCallback?.(this.calculateProgress(), message);
+    },
+    success: (message: string) => {
+      console.log(`${colors.green}${message}${colors.reset}`);
+      this.progressCallback?.(this.calculateProgress(), message);
+    },
+    warning: (message: string) => {
+      console.log(`${colors.yellow}${message}${colors.reset}`);
+      this.progressCallback?.(this.calculateProgress(), message);
+    },
+    error: (message: string) => {
+      console.error(`${colors.red}${colors.bold}ERROR: ${message}${colors.reset}`);
+      this.progressCallback?.(this.calculateProgress(), `ERROR: ${message}`);
+    },
+    header: (message: string) => {
+      console.log(`\n${colors.bold}${colors.blue}${message}${colors.reset}`);
+      this.progressCallback?.(this.calculateProgress(), message);
+    },
+    detail: (message: string) => {
+      console.log(`  ${colors.white}${message}${colors.reset}`);
+    },
+    progress: (message: string) => {
+      process.stdout.write(`${colors.magenta}${message}${colors.reset}`);
+      this.progressCallback?.(this.calculateProgress(), message.replace(/\r/g, ''));
+    }
   };
+
+  private calculateProgress(): number {
+    if (this.totalVideos === 0) return 0;
+    return Math.min(Math.round((this.currentVideoIndex / this.totalVideos) * 100), 99);
+  }
+
+  public setProgressCallback(callback: (progress: number, message: string) => void): void {
+    this.progressCallback = callback;
+  }
 
   private formatBytes(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
@@ -103,6 +136,8 @@ export class VideoCompressor {
   }
 
   private async compressVideo(filePath: string): Promise<void> {
+    this.currentVideoIndex++;
+    
     const fileName = path.basename(filePath);
     const relativePath = path.relative(this.inputDir, path.dirname(filePath));
     const outputDirPath = path.join(this.outputDir, relativePath);
@@ -132,7 +167,12 @@ export class VideoCompressor {
       // -c:a aac: use AAC codec for audio
       // -b:a 128k: audio bitrate
       return new Promise<void>((resolve, reject) => {
-        const ffmpeg = spawn(ffmpegPath as string, [
+        if (!this.ffmpegPath) {
+          reject(new Error('FFmpeg binary not found'));
+          return;
+        }
+        
+        const ffmpeg = spawn(this.ffmpegPath, [
           '-i', filePath,
           '-c:v', 'libx264',
           '-crf', this.crf.toString(),
@@ -219,6 +259,10 @@ export class VideoCompressor {
     this.processedFiles.add(filePath);
   }
 
+  private countVideos(files: string[]): number {
+    return files.filter(file => this.isVideo(file)).length;
+  }
+
   private async processDirectory(directory: string): Promise<void> {
     try {
       const files = await readdir(directory);
@@ -259,13 +303,13 @@ export class VideoCompressor {
     return allFiles;
   }
 
-  public async compress(): Promise<void> {
+  public async compress(): Promise<any> {
     if (!fs.existsSync(this.inputDir)) {
       this.log.error(`Input directory does not exist: ${this.inputDir}`);
       return;
     }
     
-    if (!ffmpegPath) {
+    if (!this.ffmpegPath) {
       this.log.error('FFmpeg binary not found. Please make sure ffmpeg-static is properly installed.');
       return;
     }
@@ -280,6 +324,14 @@ export class VideoCompressor {
     
     // Create output directory if it doesn't exist
     await this.ensureOutputDirectory(this.outputDir);
+    
+    // Count total videos for progress tracking
+    const allFiles = this.getAllFilesFromDirectory(this.inputDir);
+    this.totalVideos = this.countVideos(allFiles);
+    this.currentVideoIndex = 0;
+    
+    this.log.info(`Found ${this.totalVideos} video files to process`);
+    this.progressCallback?.(0, `Found ${this.totalVideos} video files to process`);
     
     const startTime = Date.now();
     
@@ -307,5 +359,17 @@ export class VideoCompressor {
       
       this.log.success(`Total size reduction: ${originalSize} → ${finalSize} (${savingsPercent}% saved)`);
     }
+    
+    this.progressCallback?.(100, 'Compression complete!');
+    
+    // Return result object
+    return {
+      compressedVideos: this.compressedVideos,
+      skippedFiles: this.skippedFiles,
+      errorFiles: this.errorFiles,
+      originalTotalSize: this.originalTotalSize,
+      finalTotalSize: this.finalTotalSize,
+      processingTime
+    };
   }
 } 

@@ -1,15 +1,28 @@
 {
   "name": "aurora-converter",
   "version": "1.0.0",
-  "description": "A terminal-based image converter that converts images to WebP format",
-  "main": "dist/main.js",
+  "description": "A desktop utility for image conversion and video compression",
+  "main": "dist/electron/main.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/main.js",
-    "dev": "ts-node src/main.ts",
-    "watch": "tsc -w"
+    "start": "npm run build && electron .",
+    "dev": "tsc -w & electron .",
+    "watch": "tsc -w",
+    "package": "npm run build && electron-builder build --mac --win",
+    "package-mac": "npm run build && electron-builder build --mac",
+    "package-win": "npm run build && electron-builder build --win"
   },
-  "keywords": ["image", "converter", "webp", "sharp", "video", "compressor", "ffmpeg"],
+  "keywords": [
+    "image",
+    "converter",
+    "webp",
+    "sharp",
+    "video",
+    "compressor",
+    "ffmpeg",
+    "electron",
+    "desktop"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
@@ -17,8 +30,44 @@
     "sharp": "^0.33.2"
   },
   "devDependencies": {
+    "@types/electron": "^1.4.38",
     "@types/node": "^20.11.24",
+    "electron": "^30.5.1",
+    "electron-builder": "^24.13.3",
+    "electron-store": "^10.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
+  },
+  "build": {
+    "appId": "com.aurora.converter",
+    "productName": "Aurora Converter",
+    "files": [
+      "dist/**/*",
+      "assets/**/*",
+      "!node_modules/sharp/vendor/**",
+      "!node_modules/ffmpeg-static/ffmpeg",
+      "!**/*.map"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules/ffmpeg-static/ffmpeg",
+        "to": "ffmpeg"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "darkModeSupport": true,
+      "icon": "assets/icons/mac/icon.icns"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icons/win/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
-} 
+}

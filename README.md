@@ -1,19 +1,45 @@
 # Aurora Converter
 
-A terminal-based utility that converts images to WebP format and compresses video files while preserving their format.
+A cross-platform desktop utility with a modern dark-themed GUI for image conversion and video compression.
 
 ## Features
 
 - Convert images to WebP format
 - Compress video files (MP4, AVI, MOV, etc.)
+- Dark-themed GUI interface
 - Configurable quality settings for both images and videos
 - Automatic image resizing
 - Recursive directory processing
-- Terminal-based interface
-- Input and output directory management
-- Copy non-image files to preserve full directory content
+- Progress tracking
+- Available for macOS and Windows
+
+## Usage
+
+Aurora Converter provides two main functions:
+
+### 1. Image Conversion
+
+- Convert images to WebP format
+- Configurable quality settings (0-100)
+- Maximum width control
+- Preserves original directory structure
+
+### 2. Video Compression
+
+- Compress video files while maintaining the original format
+- Configurable compression quality via CRF (Constant Rate Factor)
+- Multiple compression presets (ultrafast to veryslow)
+- No conversion between formats - same format in, just smaller
 
 ## Installation
+
+### macOS and Windows
+
+1. Download the installer for your operating system from the Releases page
+2. Run the installer and follow the instructions
+3. Launch the application from your applications folder or start menu
+
+### Building from Source
 
 ```bash
 # Clone the repository
@@ -22,67 +48,31 @@ cd aurora-converter
 
 # Install dependencies
 npm install
-```
 
-## Usage
-
-```bash
-# Development mode
-npm run dev
-
-# Build and run
-npm run build
+# Start the application in development mode
 npm start
+
+# Package the application for your platform
+npm run package-mac  # For macOS
+npm run package-win  # For Windows
+npm run package      # For both platforms
 ```
 
-When you run the converter, you'll have two options:
+## Development
 
-### 1. Image Conversion
+The application is built with:
 
-The image converter will:
-
-1. Ask for input directory path (default: `./input`)
-2. Ask for output directory path (default: `./output`)
-3. Prompt to clear the output directory if it's not empty
-4. Ask for quality settings (0-100, default: 80)
-5. Ask for maximum width (default: 1920px)
-
-All images in the input directory will be converted to WebP format and saved to the output directory, preserving the original directory structure. 
-
-### 2. Video Compression
-
-The video compressor will:
-
-1. Ask for input directory path (default: `./input`)
-2. Ask for output directory path (default: `./output`)
-3. Prompt to clear the output directory if it's not empty
-4. Ask for CRF (Constant Rate Factor) value (0-51, default: 23, lower = better quality)
-5. Ask for preset (ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow)
-
-All video files in the input directory will be compressed while maintaining their original format and saved to the output directory, preserving the original directory structure.
-
-## Directory Structure
-
-The project comes with two default directories:
-
-- `input/`: Place your images or videos here to be processed
-- `output/`: Converted/compressed files will be saved here
-
-## Configuration
-
-The program will prompt for these settings when run.
-
-For images:
-- WebP quality (0-100)
-- Maximum width for images
-
-For videos:
-- CRF value (0-51, lower is better quality but larger file size)
-- Encoding preset (affects compression speed and efficiency)
+- Electron for cross-platform desktop capabilities
+- TypeScript for type-safe JavaScript
+- Sharp for image processing
+- FFmpeg for video compression
 
 ## Requirements
 
-The video compression feature requires FFmpeg, which is automatically installed via the ffmpeg-static npm package.
+The application is self-contained and includes all necessary dependencies:
+
+- Sharp for image processing
+- FFmpeg for video compression
 
 ## License
 

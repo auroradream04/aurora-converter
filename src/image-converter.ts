@@ -45,6 +45,9 @@ export class ImageConverter {
   private finalTotalSize: number = 0;
   private filesMap: Map<string, Set<string>> = new Map();
   private debug: boolean = true;
+  private progressCallback?: (progress: number, message: string) => void;
+  private totalImages: number = 0;
+  private currentImageIndex: number = 0;
 
   constructor(options: ConverterOptions = {}) {
     this.quality = options.quality ?? 80;
@@ -55,13 +58,39 @@ export class ImageConverter {
   }
 
   private log = {
-    info: (message: string) => console.log(`${colors.cyan}${message}${colors.reset}`),
-    success: (message: string) => console.log(`${colors.green}${message}${colors.reset}`),
-    warning: (message: string) => console.log(`${colors.yellow}${message}${colors.reset}`),
-    error: (message: string) => console.error(`${colors.red}${colors.bold}ERROR: ${message}${colors.reset}`),
-    header: (message: string) => console.log(`\n${colors.bold}${colors.blue}${message}${colors.reset}`),
-    detail: (message: string) => console.log(`  ${colors.white}${message}${colors.reset}`)
+    info: (message: string) => {
+      console.log(`${colors.cyan}${message}${colors.reset}`);
+      this.progressCallback?.(this.calculateProgress(), message);
+    },
+    success: (message: string) => {
+      console.log(`${colors.green}${message}${colors.reset}`);
+      this.progressCallback?.(this.calculateProgress(), message);
+    },
+    warning: (message: string) => {
+      console.log(`${colors.yellow}${message}${colors.reset}`);
+      this.progressCallback?.(this.calculateProgress(), message);
+    },
+    error: (message: string) => {
+      console.error(`${colors.red}${colors.bold}ERROR: ${message}${colors.reset}`);
+      this.progressCallback?.(this.calculateProgress(), `ERROR: ${message}`);
+    },
+    header: (message: string) => {
+      console.log(`\n${colors.bold}${colors.blue}${message}${colors.reset}`);
+      this.progressCallback?.(this.calculateProgress(), message);
+    },
+    detail: (message: string) => {
+      console.log(`  ${colors.white}${message}${colors.reset}`);
+    }
   };
+
+  private calculateProgress(): number {
+    if (this.totalImages === 0) return 0;
+    return Math.min(Math.round((this.currentImageIndex / this.totalImages) * 100), 99);
+  }
+
+  public setProgressCallback(callback: (progress: number, message: string) => void): void {
+    this.progressCallback = callback;
+  }
 
   private formatBytes(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
@@ -167,6 +196,8 @@ export class ImageConverter {
   }
 
   private async convertToWebP(filePath: string): Promise<void> {
+    this.currentImageIndex++;
+    
     const fileName = path.basename(filePath);
     const relativePath = path.relative(this.inputDir, path.dirname(filePath));
     const outputDirPath = path.join(this.outputDir, relativePath);
@@ -407,7 +438,11 @@ export class ImageConverter {
     }
   }
 
-  public async convert(): Promise<void> {
+  private countImages(files: string[]): number {
+    return files.filter(file => this.isImage(file)).length;
+  }
+
+  public async convert(): Promise<any> {
     this.log.header('Starting image conversion...');
     this.log.info(`Input directory: ${this.inputDir}`);
     this.log.info(`Output directory: ${this.outputDir}`);
@@ -429,6 +464,16 @@ export class ImageConverter {
       // First, index all files to detect duplicate base names
       this.indexFiles(this.inputDir);
       
+      // Count total images for progress tracking
+      const allFiles = this.getAllFilesFromDirectory(this.inputDir);
+      this.totalImages = this.countImages(allFiles);
+      this.currentImageIndex = 0;
+      
+      this.log.info(`Found ${this.totalImages} image files to process`);
+      this.progressCallback?.(0, `Found ${this.totalImages} image files to process`);
+      
+      const startTime = Date.now();
+      
       // Ensure output directory exists
       await this.ensureOutputDirectory(this.outputDir);
       
@@ -445,6 +490,8 @@ export class ImageConverter {
       // Calculate space savings
       const savedBytes = this.originalTotalSize - this.finalTotalSize;
       const savingsPercentage = (savedBytes / this.originalTotalSize * 100).toFixed(2);
+      
+      const processingTime = Date.now() - startTime;
       
       this.log.header('Image conversion completed!');
       this.log.header('---------- Summary ----------');
@@ -464,8 +511,24 @@ export class ImageConverter {
       this.log.info(`Original total size: ${this.formatBytes(this.originalTotalSize)}`);
       this.log.info(`Final total size: ${this.formatBytes(this.finalTotalSize)}`);
       this.log.success(`Space saved: ${this.formatBytes(savedBytes)} (${savingsPercentage}%)`);
+      
+      // Add progress callback before the end
+      this.progressCallback?.(100, 'Conversion complete!');
+      
+      // Return result object
+      return {
+        convertedImages: this.convertedImages,
+        copiedFiles: this.copiedFiles,
+        skippedFiles: this.skippedFiles,
+        errorFiles: this.errorFiles,
+        existingWebpPreferred: this.existingWebpPreferred,
+        originalTotalSize: this.originalTotalSize,
+        finalTotalSize: this.finalTotalSize,
+        processingTime
+      };
     } catch (error) {
       this.log.error(`During conversion: ${error}`);
+      return null;
     }
   }
 } 
