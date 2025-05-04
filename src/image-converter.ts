@@ -125,22 +125,66 @@ export class ImageConverter {
   }
 
   private async clearDirectory(directory: string): Promise<void> {
-    if (this.clearOutputDir && fs.existsSync(directory)) {
+    console.log(`[DEBUG] Attempting to clear directory: ${directory}`);
+    console.log(`[DEBUG] this.clearOutputDir = ${this.clearOutputDir}`);
+    
+    if (!fs.existsSync(directory)) {
+      console.log(`[DEBUG] Directory does not exist: ${directory}`);
+      return;
+    }
+    
+    try {
       const files = await readdir(directory);
+      console.log(`[DEBUG] Files found in directory: ${files.length}`);
       
       for (const file of files) {
-        const filePath = path.join(directory, file);
-        const stats = await stat(filePath);
+        if (file === '.gitkeep') {
+          console.log(`[DEBUG] Skipping .gitkeep file`);
+          continue; // Skip .gitkeep files
+        }
         
-        if (stats.isDirectory()) {
-          await this.clearDirectory(filePath);
-          fs.rmdirSync(filePath);
-        } else {
-          fs.unlinkSync(filePath);
+        try {
+          const filePath = path.join(directory, file);
+          console.log(`[DEBUG] Processing file: ${filePath}`);
+          
+          try {
+            const stats = await stat(filePath);
+            
+            if (stats.isDirectory()) {
+              console.log(`[DEBUG] Clearing subdirectory: ${filePath}`);
+              await this.clearDirectory(filePath);
+              console.log(`[DEBUG] Removing subdirectory: ${filePath}`);
+              try {
+                fs.rmdirSync(filePath);
+                console.log(`[DEBUG] Successfully removed subdirectory: ${filePath}`);
+              } catch (err) {
+                console.log(`[DEBUG] Error removing subdirectory: ${filePath}`, err);
+                this.log.error(`Error removing subdirectory ${filePath}: ${err}`);
+              }
+            } else {
+              console.log(`[DEBUG] Deleting file: ${filePath}`);
+              try {
+                fs.unlinkSync(filePath);
+                console.log(`[DEBUG] Successfully deleted file: ${filePath}`);
+              } catch (err) {
+                console.log(`[DEBUG] Error deleting file: ${filePath}`, err);
+                this.log.error(`Error deleting file ${filePath}: ${err}`);
+              }
+            }
+          } catch (error) {
+            console.log(`[DEBUG] Error getting stats for file ${filePath}: ${error}`);
+            this.log.error(`Error getting stats for file ${filePath}: ${error}`);
+          }
+        } catch (error) {
+          console.log(`[DEBUG] Error clearing file ${file}: ${error}`);
+          this.log.error(`Error clearing file ${file}: ${error}`);
         }
       }
       
       this.log.info(`Cleared output directory: ${directory}`);
+    } catch (error) {
+      console.log(`[DEBUG] Error reading directory ${directory}: ${error}`);
+      this.log.error(`Error reading directory ${directory}: ${error}`);
     }
   }
 
@@ -448,6 +492,8 @@ export class ImageConverter {
     this.log.info(`Output directory: ${this.outputDir}`);
     this.log.info(`Quality: ${this.quality}`);
     this.log.info(`Max width: ${this.maxWidth}`);
+    this.log.info(`Clear output directory: ${this.clearOutputDir ? 'Yes' : 'No'}`);
+    console.log('[DEBUG] clearOutputDir value:', this.clearOutputDir, 'type:', typeof this.clearOutputDir);
     
     try {
       // Reset counters
@@ -479,7 +525,10 @@ export class ImageConverter {
       
       // Clear output directory if requested
       if (this.clearOutputDir) {
+        this.log.info(`Clearing output directory: ${this.outputDir}`);
         await this.clearDirectory(this.outputDir);
+      } else {
+        this.log.info(`Skipping clearing output directory (clearOutputDir is ${this.clearOutputDir})`);
       }
       
       await this.processDirectory(this.inputDir);

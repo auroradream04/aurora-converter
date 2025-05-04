@@ -116,22 +116,66 @@ export class VideoCompressor {
   }
 
   private async clearDirectory(directory: string): Promise<void> {
-    if (this.clearOutputDir && fs.existsSync(directory)) {
+    console.log(`[DEBUG] Attempting to clear directory: ${directory}`);
+    console.log(`[DEBUG] this.clearOutputDir = ${this.clearOutputDir}`);
+    
+    if (!fs.existsSync(directory)) {
+      console.log(`[DEBUG] Directory does not exist: ${directory}`);
+      return;
+    }
+    
+    try {
       const files = await readdir(directory);
+      console.log(`[DEBUG] Files found in directory: ${files.length}`);
       
       for (const file of files) {
-        const filePath = path.join(directory, file);
-        const stats = await stat(filePath);
+        if (file === '.gitkeep') {
+          console.log(`[DEBUG] Skipping .gitkeep file`);
+          continue; // Skip .gitkeep files
+        }
         
-        if (stats.isDirectory()) {
-          await this.clearDirectory(filePath);
-          fs.rmdirSync(filePath);
-        } else {
-          fs.unlinkSync(filePath);
+        try {
+          const filePath = path.join(directory, file);
+          console.log(`[DEBUG] Processing file: ${filePath}`);
+          
+          try {
+            const stats = await stat(filePath);
+            
+            if (stats.isDirectory()) {
+              console.log(`[DEBUG] Clearing subdirectory: ${filePath}`);
+              await this.clearDirectory(filePath);
+              console.log(`[DEBUG] Removing subdirectory: ${filePath}`);
+              try {
+                fs.rmdirSync(filePath);
+                console.log(`[DEBUG] Successfully removed subdirectory: ${filePath}`);
+              } catch (err) {
+                console.log(`[DEBUG] Error removing subdirectory: ${filePath}`, err);
+                this.log.error(`Error removing subdirectory ${filePath}: ${err}`);
+              }
+            } else {
+              console.log(`[DEBUG] Deleting file: ${filePath}`);
+              try {
+                fs.unlinkSync(filePath);
+                console.log(`[DEBUG] Successfully deleted file: ${filePath}`);
+              } catch (err) {
+                console.log(`[DEBUG] Error deleting file: ${filePath}`, err);
+                this.log.error(`Error deleting file ${filePath}: ${err}`);
+              }
+            }
+          } catch (error) {
+            console.log(`[DEBUG] Error getting stats for file ${filePath}: ${error}`);
+            this.log.error(`Error getting stats for file ${filePath}: ${error}`);
+          }
+        } catch (error) {
+          console.log(`[DEBUG] Error clearing file ${file}: ${error}`);
+          this.log.error(`Error clearing file ${file}: ${error}`);
         }
       }
       
       this.log.info(`Cleared output directory: ${directory}`);
+    } catch (error) {
+      console.log(`[DEBUG] Error reading directory ${directory}: ${error}`);
+      this.log.error(`Error reading directory ${directory}: ${error}`);
     }
   }
 
@@ -304,72 +348,87 @@ export class VideoCompressor {
   }
 
   public async compress(): Promise<any> {
-    if (!fs.existsSync(this.inputDir)) {
-      this.log.error(`Input directory does not exist: ${this.inputDir}`);
-      return;
-    }
+    this.log.header('Starting video compression...');
+    this.log.info(`Input directory: ${this.inputDir}`);
+    this.log.info(`Output directory: ${this.outputDir}`);
+    this.log.info(`CRF: ${this.crf}`);
+    this.log.info(`Preset: ${this.preset}`);
+    this.log.info(`Clear output directory: ${this.clearOutputDir ? 'Yes' : 'No'}`);
+    console.log('[DEBUG] clearOutputDir value:', this.clearOutputDir, 'type:', typeof this.clearOutputDir);
     
-    if (!this.ffmpegPath) {
-      this.log.error('FFmpeg binary not found. Please make sure ffmpeg-static is properly installed.');
-      return;
-    }
-    
-    this.log.header('Starting Video Compression');
-    this.log.info(`Input Directory: ${this.inputDir}`);
-    this.log.info(`Output Directory: ${this.outputDir}`);
-    this.log.info(`Compression Settings: CRF ${this.crf}, Preset: ${this.preset}`);
-    
-    // Clear output directory if requested
-    await this.clearDirectory(this.outputDir);
-    
-    // Create output directory if it doesn't exist
-    await this.ensureOutputDirectory(this.outputDir);
-    
-    // Count total videos for progress tracking
-    const allFiles = this.getAllFilesFromDirectory(this.inputDir);
-    this.totalVideos = this.countVideos(allFiles);
-    this.currentVideoIndex = 0;
-    
-    this.log.info(`Found ${this.totalVideos} video files to process`);
-    this.progressCallback?.(0, `Found ${this.totalVideos} video files to process`);
-    
-    const startTime = Date.now();
-    
-    // Process all files in the input directory
-    await this.processDirectory(this.inputDir);
-    
-    const endTime = Date.now();
-    const processingTime = ((endTime - startTime) / 1000).toFixed(2);
-    
-    this.log.header('Compression Complete');
-    this.log.info(`Processed ${this.compressedVideos} videos in ${processingTime} seconds`);
-    
-    if (this.skippedFiles > 0) {
-      this.log.warning(`Skipped ${this.skippedFiles} non-video files`);
-    }
-    
-    if (this.errorFiles > 0) {
-      this.log.error(`Encountered errors in ${this.errorFiles} files`);
-    }
-    
-    if (this.compressedVideos > 0) {
-      const originalSize = this.formatBytes(this.originalTotalSize);
-      const finalSize = this.formatBytes(this.finalTotalSize);
-      const savingsPercent = ((this.originalTotalSize - this.finalTotalSize) / this.originalTotalSize * 100).toFixed(2);
+    try {
+      // Validate ffmpeg path
+      if (!this.ffmpegPath) {
+        throw new Error('FFmpeg binary not found. Make sure ffmpeg is installed and accessible.');
+      }
       
-      this.log.success(`Total size reduction: ${originalSize} → ${finalSize} (${savingsPercent}% saved)`);
+      // Reset counters
+      this.processedFiles.clear();
+      this.compressedVideos = 0;
+      this.skippedFiles = 0;
+      this.errorFiles = 0;
+      this.originalTotalSize = 0;
+      this.finalTotalSize = 0;
+      
+      // Count total videos for progress tracking
+      const allFiles = this.getAllFilesFromDirectory(this.inputDir);
+      this.totalVideos = this.countVideos(allFiles);
+      this.currentVideoIndex = 0;
+      
+      this.log.info(`Found ${this.totalVideos} video files to process`);
+      this.progressCallback?.(0, `Found ${this.totalVideos} video files to process`);
+      
+      const startTime = Date.now();
+      
+      // Ensure output directory exists
+      await this.ensureOutputDirectory(this.outputDir);
+      
+      // Clear output directory if requested
+      if (this.clearOutputDir) {
+        this.log.info(`Clearing output directory: ${this.outputDir}`);
+        await this.clearDirectory(this.outputDir);
+      } else {
+        this.log.info(`Skipping clearing output directory (clearOutputDir is ${this.clearOutputDir})`);
+      }
+      
+      await this.processDirectory(this.inputDir);
+      
+      const endTime = Date.now();
+      const processingTime = ((endTime - startTime) / 1000).toFixed(2);
+      
+      this.log.header('Compression Complete');
+      this.log.info(`Processed ${this.compressedVideos} videos in ${processingTime} seconds`);
+      
+      if (this.skippedFiles > 0) {
+        this.log.warning(`Skipped ${this.skippedFiles} non-video files`);
+      }
+      
+      if (this.errorFiles > 0) {
+        this.log.error(`Encountered errors in ${this.errorFiles} files`);
+      }
+      
+      if (this.compressedVideos > 0) {
+        const originalSize = this.formatBytes(this.originalTotalSize);
+        const finalSize = this.formatBytes(this.finalTotalSize);
+        const savingsPercent = ((this.originalTotalSize - this.finalTotalSize) / this.originalTotalSize * 100).toFixed(2);
+        
+        this.log.success(`Total size reduction: ${originalSize} → ${finalSize} (${savingsPercent}% saved)`);
+      }
+      
+      this.progressCallback?.(100, 'Compression complete!');
+      
+      // Return result object
+      return {
+        compressedVideos: this.compressedVideos,
+        skippedFiles: this.skippedFiles,
+        errorFiles: this.errorFiles,
+        originalTotalSize: this.originalTotalSize,
+        finalTotalSize: this.finalTotalSize,
+        processingTime
+      };
+    } catch (error) {
+      this.log.error(`Error compressing videos: ${error}`);
+      return null;
     }
-    
-    this.progressCallback?.(100, 'Compression complete!');
-    
-    // Return result object
-    return {
-      compressedVideos: this.compressedVideos,
-      skippedFiles: this.skippedFiles,
-      errorFiles: this.errorFiles,
-      originalTotalSize: this.originalTotalSize,
-      finalTotalSize: this.finalTotalSize,
-      processingTime
-    };
   }
 } 

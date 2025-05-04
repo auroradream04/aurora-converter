@@ -7,6 +7,18 @@ contextBridge.exposeInMainWorld(
     // Directory selection
     selectDirectory: (type: 'input' | 'output') => ipcRenderer.invoke('select-directory', type),
     
+    // Check if directory has files
+    checkDirectoryHasFiles: (dirPath: string) => ipcRenderer.invoke('check-directory-has-files', dirPath),
+    
+    // Show confirmation dialog
+    showConfirmDialog: (title: string, message: string) => ipcRenderer.invoke('show-confirm-dialog', { title, message }),
+    
+    // Directly clear a directory
+    clearDirectory: (dirPath: string) => {
+      console.log('[PRELOAD] Requesting to clear directory:', dirPath);
+      return ipcRenderer.invoke('clear-directory', dirPath);
+    },
+    
     // Image conversion
     convertImages: (options: {
       inputDir: string;
@@ -14,7 +26,11 @@ contextBridge.exposeInMainWorld(
       clearOutput: boolean;
       quality: number;
       maxWidth: number;
-    }) => ipcRenderer.invoke('convert-images', options),
+    }) => {
+      console.log('[PRELOAD] convertImages called with options:', options);
+      console.log('[PRELOAD] clearOutput:', options.clearOutput, 'type:', typeof options.clearOutput);
+      return ipcRenderer.invoke('convert-images', options);
+    },
     
     // Video compression
     compressVideos: (options: {
@@ -23,7 +39,11 @@ contextBridge.exposeInMainWorld(
       clearOutput: boolean;
       crf: number;
       preset: string;
-    }) => ipcRenderer.invoke('compress-videos', options),
+    }) => {
+      console.log('[PRELOAD] compressVideos called with options:', options);
+      console.log('[PRELOAD] clearOutput:', options.clearOutput, 'type:', typeof options.clearOutput);
+      return ipcRenderer.invoke('compress-videos', options);
+    },
     
     // Get settings from main process
     getSettings: () => ipcRenderer.invoke('get-settings'),

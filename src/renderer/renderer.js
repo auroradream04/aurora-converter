@@ -146,16 +146,22 @@ startImageConversion.addEventListener('click', async () => {
   showProgress();
   
   try {
+    // Always clear the output directory directly
+    addToLog('info', `Clearing output directory: ${imageOutputDir.value}`);
+    await window.api.clearDirectory(imageOutputDir.value);
+    
     addToLog('info', 'Starting image conversion...');
     
     // Start conversion
     const options = {
       inputDir: imageInputDir.value,
       outputDir: imageOutputDir.value,
-      clearOutput: imageClearOutput.checked,
+      clearOutput: false, // We've already cleared it directly
       quality: parseInt(imageQuality.value),
       maxWidth: parseInt(imageMaxWidth.value)
     };
+    
+    console.log('Image conversion options:', options);
     
     const result = await window.api.convertImages(options);
     
@@ -203,16 +209,22 @@ startVideoCompression.addEventListener('click', async () => {
   showProgress();
   
   try {
+    // Always clear the output directory directly
+    addToLog('info', `Clearing output directory: ${videoOutputDir.value}`);
+    await window.api.clearDirectory(videoOutputDir.value);
+    
     addToLog('info', 'Starting video compression...');
     
     // Start compression
     const options = {
       inputDir: videoInputDir.value,
       outputDir: videoOutputDir.value,
-      clearOutput: videoClearOutput.checked,
+      clearOutput: false, // We've already cleared it directly
       crf: parseInt(videoCrf.value),
       preset: videoPreset.value
     };
+    
+    console.log('Video compression options:', options);
     
     const result = await window.api.compressVideos(options);
     
