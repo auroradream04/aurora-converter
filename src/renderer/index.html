@@ -19,125 +19,154 @@
       <button id="tab-videos" class="tab-button">Video Compressor</button>
     </div>
 
-    <div class="content-container">
-      <!-- Image Converter Tab -->
-      <div id="content-images" class="tab-content active">
-        <h2>Convert Images to WebP</h2>
-        
-        <div class="input-group">
-          <label for="image-input-dir">Input Directory:</label>
-          <div class="input-with-button">
-            <input type="text" id="image-input-dir" placeholder="Select input directory..." readonly>
-            <button id="browse-image-input" class="browse-button">Browse</button>
+    <div class="main-content">
+      <!-- Left Column - Controls -->
+      <div class="left-column">
+        <!-- Image Converter Tab -->
+        <div id="content-images" class="tab-content active">
+          <h2>Convert Images to WebP</h2>
+          
+          <div class="input-group">
+            <label for="image-input-dir">Input Directory:</label>
+            <div class="input-with-button">
+              <input type="text" id="image-input-dir" placeholder="Select input directory..." readonly>
+              <button id="browse-image-input" class="browse-button">Browse</button>
+            </div>
           </div>
-        </div>
-        
-        <div class="input-group">
-          <label for="image-output-dir">Output Directory:</label>
-          <div class="input-with-button">
-            <input type="text" id="image-output-dir" placeholder="Select output directory..." readonly>
-            <button id="browse-image-output" class="browse-button">Browse</button>
+          
+          <div class="input-group">
+            <label for="image-output-dir">Output Directory:</label>
+            <div class="input-with-button">
+              <input type="text" id="image-output-dir" placeholder="Select output directory..." readonly>
+              <button id="browse-image-output" class="browse-button">Browse</button>
+            </div>
           </div>
-        </div>
-        
-        <div class="input-group">
-          <label for="image-quality">Quality (0-100):</label>
-          <div class="slider-container">
-            <input type="range" id="image-quality" min="0" max="100" value="80" class="slider">
-            <span id="image-quality-value">80</span>
+          
+          <div class="input-group">
+            <label for="image-quality">Quality (0-100):</label>
+            <div class="slider-container">
+              <input type="range" id="image-quality" min="0" max="100" value="80" class="slider">
+              <input type="number" id="image-quality-input" min="0" max="100" value="80" class="slider-value-input">
+            </div>
           </div>
-        </div>
-        
-        <div class="input-group">
-          <label for="image-max-width">Max Width (pixels):</label>
-          <div class="slider-container">
-            <input type="range" id="image-max-width" min="100" max="4000" step="100" value="1920" class="slider">
-            <span id="image-max-width-value">1920</span>
+          
+          <div class="input-group">
+            <label for="image-max-width">Max Width (pixels):</label>
+            <div class="slider-container">
+              <input type="range" id="image-max-width" min="100" max="4000" value="1920" class="slider">
+              <input type="number" id="image-max-width-input" min="100" max="4000" value="1920" class="slider-value-input">
+            </div>
           </div>
+          
+          <div class="input-group">
+            <label for="image-clear-output">Clear Output Directory:</label>
+            <label class="toggle">
+              <input type="checkbox" id="image-clear-output">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          
+          <button id="start-image-conversion" class="start-button">Start Conversion</button>
         </div>
-        
-        <div class="input-group">
-          <label for="image-clear-output">Clear Output Directory:</label>
-          <label class="toggle">
-            <input type="checkbox" id="image-clear-output">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        
-        <button id="start-image-conversion" class="start-button">Start Conversion</button>
-      </div>
 
-      <!-- Video Compressor Tab -->
-      <div id="content-videos" class="tab-content">
-        <h2>Compress Video Files</h2>
-        
-        <div class="input-group">
-          <label for="video-input-dir">Input Directory:</label>
-          <div class="input-with-button">
-            <input type="text" id="video-input-dir" placeholder="Select input directory..." readonly>
-            <button id="browse-video-input" class="browse-button">Browse</button>
+        <!-- Video Compressor Tab -->
+        <div id="content-videos" class="tab-content">
+          <h2>Compress Video Files</h2>
+          
+          <div class="input-group">
+            <label for="video-input-dir">Input Directory:</label>
+            <div class="input-with-button">
+              <input type="text" id="video-input-dir" placeholder="Select input directory..." readonly>
+              <button id="browse-video-input" class="browse-button">Browse</button>
+            </div>
           </div>
-        </div>
-        
-        <div class="input-group">
-          <label for="video-output-dir">Output Directory:</label>
-          <div class="input-with-button">
-            <input type="text" id="video-output-dir" placeholder="Select output directory..." readonly>
-            <button id="browse-video-output" class="browse-button">Browse</button>
+          
+          <div class="input-group">
+            <label for="video-output-dir">Output Directory:</label>
+            <div class="input-with-button">
+              <input type="text" id="video-output-dir" placeholder="Select output directory..." readonly>
+              <button id="browse-video-output" class="browse-button">Browse</button>
+            </div>
           </div>
-        </div>
-        
-        <div class="input-group">
-          <label for="video-crf">CRF (0-51, lower = better quality):</label>
-          <div class="slider-container">
-            <input type="range" id="video-crf" min="0" max="51" value="23" class="slider">
-            <span id="video-crf-value">23</span>
+          
+          <div class="input-group">
+            <label for="video-crf">CRF (0-51, lower = better quality):</label>
+            <div class="slider-container">
+              <input type="range" id="video-crf" min="0" max="51" value="23" class="slider">
+              <input type="number" id="video-crf-input" min="0" max="51" value="23" class="slider-value-input">
+            </div>
           </div>
+          
+          <div class="input-group">
+            <label for="video-preset">Preset:</label>
+            <select id="video-preset" class="select">
+              <option value="ultrafast">ultrafast (fastest, largest size)</option>
+              <option value="superfast">superfast</option>
+              <option value="veryfast">veryfast</option>
+              <option value="faster">faster</option>
+              <option value="fast">fast</option>
+              <option value="medium" selected>medium (balanced)</option>
+              <option value="slow">slow</option>
+              <option value="slower">slower</option>
+              <option value="veryslow">veryslow (slowest, smallest size)</option>
+            </select>
+          </div>
+          
+          <div class="input-group">
+            <label for="video-clear-output">Clear Output Directory:</label>
+            <label class="toggle">
+              <input type="checkbox" id="video-clear-output">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          
+          <button id="start-video-compression" class="start-button">Start Compression</button>
         </div>
-        
-        <div class="input-group">
-          <label for="video-preset">Preset:</label>
-          <select id="video-preset" class="select">
-            <option value="ultrafast">ultrafast (fastest, largest size)</option>
-            <option value="superfast">superfast</option>
-            <option value="veryfast">veryfast</option>
-            <option value="faster">faster</option>
-            <option value="fast">fast</option>
-            <option value="medium" selected>medium (balanced)</option>
-            <option value="slow">slow</option>
-            <option value="slower">slower</option>
-            <option value="veryslow">veryslow (slowest, smallest size)</option>
-          </select>
-        </div>
-        
-        <div class="input-group">
-          <label for="video-clear-output">Clear Output Directory:</label>
-          <label class="toggle">
-            <input type="checkbox" id="video-clear-output">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        
-        <button id="start-video-compression" class="start-button">Start Compression</button>
       </div>
-    </div>
+      
+      <!-- Right Column - Results and Logs -->
+      <div class="right-column">
+        <!-- Progress Section -->
+        <div class="progress-container" id="progress-container" style="display: none;">
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="progress-bar"></div>
+          </div>
+          <div class="progress-text" id="progress-text">Processing...</div>
+          <button id="open-output-dir" class="action-button" style="display: none;">Open Output Folder</button>
+        </div>
 
-    <!-- Progress Section -->
-    <div class="progress-container" id="progress-container" style="display: none;">
-      <div class="progress-bar-container">
-        <div class="progress-bar" id="progress-bar"></div>
-      </div>
-      <div class="progress-text" id="progress-text">Processing...</div>
-      <button id="open-output-dir" class="action-button" style="display: none;">Open Output Folder</button>
-    </div>
+        <!-- Results Section -->
+        <div class="results-container" id="results-container" style="display: none;">
+          <h3 class="results-header">Conversion Results</h3>
+          <div class="results-content" id="results-content">
+            <div class="results-stat">
+              <span class="results-label">Files Processed:</span>
+              <span class="results-value" id="results-files-count">0</span>
+            </div>
+            <div class="results-stat">
+              <span class="results-label">Original Size:</span>
+              <span class="results-value" id="results-original-size">0 MB</span>
+            </div>
+            <div class="results-stat">
+              <span class="results-label">New Size:</span>
+              <span class="results-value" id="results-final-size">0 MB</span>
+            </div>
+            <div class="results-stat">
+              <span class="results-label">Size Reduction:</span>
+              <span class="results-value highlight" id="results-saved-percent">0%</span>
+            </div>
+          </div>
+        </div>
 
-    <!-- Log Section -->
-    <div class="log-container">
-      <div class="log-header">
-        <h3>Processing Log</h3>
-        <button id="clear-log" class="small-button">Clear</button>
+        <!-- Log Section -->
+        <div class="log-container">
+          <div class="log-header">
+            <h3>Processing Log</h3>
+            <button id="clear-log" class="small-button">Clear</button>
+          </div>
+          <div class="log" id="log"></div>
+        </div>
       </div>
-      <div class="log" id="log"></div>
     </div>
   </div>
 

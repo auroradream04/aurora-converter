@@ -28,6 +28,9 @@ contextBridge.exposeInMainWorld(
     // Get settings from main process
     getSettings: () => ipcRenderer.invoke('get-settings'),
     
+    // Get app path for default directories
+    getAppPath: () => ipcRenderer.invoke('get-app-path'),
+    
     // Open folder in explorer/finder
     openExplorer: (path: string) => ipcRenderer.invoke('open-explorer', path),
     

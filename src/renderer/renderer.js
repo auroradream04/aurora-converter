@@ -8,9 +8,9 @@ const contentVideos = document.getElementById('content-videos');
 const imageInputDir = document.getElementById('image-input-dir');
 const imageOutputDir = document.getElementById('image-output-dir');
 const imageQuality = document.getElementById('image-quality');
-const imageQualityValue = document.getElementById('image-quality-value');
+const imageQualityInput = document.getElementById('image-quality-input');
 const imageMaxWidth = document.getElementById('image-max-width');
-const imageMaxWidthValue = document.getElementById('image-max-width-value');
+const imageMaxWidthInput = document.getElementById('image-max-width-input');
 const imageClearOutput = document.getElementById('image-clear-output');
 const browseImageInput = document.getElementById('browse-image-input');
 const browseImageOutput = document.getElementById('browse-image-output');
@@ -20,7 +20,7 @@ const startImageConversion = document.getElementById('start-image-conversion');
 const videoInputDir = document.getElementById('video-input-dir');
 const videoOutputDir = document.getElementById('video-output-dir');
 const videoCrf = document.getElementById('video-crf');
-const videoCrfValue = document.getElementById('video-crf-value');
+const videoCrfInput = document.getElementById('video-crf-input');
 const videoPreset = document.getElementById('video-preset');
 const videoClearOutput = document.getElementById('video-clear-output');
 const browseVideoInput = document.getElementById('browse-video-input');
@@ -32,6 +32,13 @@ const progressContainer = document.getElementById('progress-container');
 const progressBar = document.getElementById('progress-bar');
 const progressText = document.getElementById('progress-text');
 const openOutputDir = document.getElementById('open-output-dir');
+
+// Results UI
+const resultsContainer = document.getElementById('results-container');
+const resultsFilesCount = document.getElementById('results-files-count');
+const resultsOriginalSize = document.getElementById('results-original-size');
+const resultsFinalSize = document.getElementById('results-final-size');
+const resultsSavedPercent = document.getElementById('results-saved-percent');
 
 // Log
 const log = document.getElementById('log');
@@ -54,15 +61,36 @@ tabVideos.addEventListener('click', () => {
 
 // Sliders
 imageQuality.addEventListener('input', () => {
-  imageQualityValue.textContent = imageQuality.value;
+  imageQualityInput.value = imageQuality.value;
+});
+
+imageQualityInput.addEventListener('input', () => {
+  const value = parseInt(imageQualityInput.value);
+  if (!isNaN(value) && value >= 0 && value <= 100) {
+    imageQuality.value = value;
+  }
 });
 
 imageMaxWidth.addEventListener('input', () => {
-  imageMaxWidthValue.textContent = imageMaxWidth.value;
+  imageMaxWidthInput.value = imageMaxWidth.value;
+});
+
+imageMaxWidthInput.addEventListener('input', () => {
+  const value = parseInt(imageMaxWidthInput.value);
+  if (!isNaN(value) && value >= 100 && value <= 4000) {
+    imageMaxWidth.value = value;
+  }
 });
 
 videoCrf.addEventListener('input', () => {
-  videoCrfValue.textContent = videoCrf.value;
+  videoCrfInput.value = videoCrf.value;
+});
+
+videoCrfInput.addEventListener('input', () => {
+  const value = parseInt(videoCrfInput.value);
+  if (!isNaN(value) && value >= 0 && value <= 51) {
+    videoCrf.value = value;
+  }
 });
 
 // Directory selection
@@ -138,6 +166,9 @@ startImageConversion.addEventListener('click', async () => {
     if (result?.originalTotalSize && result?.finalTotalSize) {
       const savedPercent = ((result.originalTotalSize - result.finalTotalSize) / result.originalTotalSize * 100).toFixed(2);
       addToLog('success', `Size reduction: ${formatBytes(result.originalTotalSize)} → ${formatBytes(result.finalTotalSize)} (${savedPercent}% saved)`);
+      
+      // Update results UI
+      showResults(result.convertedImages, result.originalTotalSize, result.finalTotalSize, savedPercent);
     }
     
     openOutputDir.style.display = 'block';
@@ -192,6 +223,9 @@ startVideoCompression.addEventListener('click', async () => {
     if (result?.originalTotalSize && result?.finalTotalSize) {
       const savedPercent = ((result.originalTotalSize - result.finalTotalSize) / result.originalTotalSize * 100).toFixed(2);
       addToLog('success', `Size reduction: ${formatBytes(result.originalTotalSize)} → ${formatBytes(result.finalTotalSize)} (${savedPercent}% saved)`);
+      
+      // Update results UI
+      showResults(result.compressedVideos, result.originalTotalSize, result.finalTotalSize, savedPercent);
     }
     
     openOutputDir.style.display = 'block';
@@ -227,6 +261,7 @@ function setButtonsEnabled(enabled) {
 
 function showProgress() {
   progressContainer.style.display = 'block';
+  resultsContainer.style.display = 'none';
   progressBar.style.width = '0%';
   progressText.textContent = 'Processing...';
   openOutputDir.style.display = 'none';
@@ -235,6 +270,14 @@ function showProgress() {
 function updateProgress(percent, message) {
   progressBar.style.width = `${percent}%`;
   progressText.textContent = message || 'Processing...';
+}
+
+function showResults(fileCount, originalSize, finalSize, savedPercent) {
+  resultsContainer.style.display = 'block';
+  resultsFilesCount.textContent = fileCount;
+  resultsOriginalSize.textContent = formatBytes(originalSize);
+  resultsFinalSize.textContent = formatBytes(finalSize);
+  resultsSavedPercent.textContent = `${savedPercent}%`;
 }
 
 function addToLog(type, message) {
@@ -279,16 +322,33 @@ window.api.onProgressUpdate((data) => {
 
 // Init app
 window.addEventListener('DOMContentLoaded', async () => {
+  // Set default input and output directories to app's folders
+  const appPath = await window.api.getAppPath();
+  const defaultInputDir = `${appPath}/input`;
+  const defaultOutputDir = `${appPath}/output`;
+  
+  // Set default directories
+  imageInputDir.value = defaultInputDir;
+  imageOutputDir.value = defaultOutputDir;
+  videoInputDir.value = defaultInputDir;
+  videoOutputDir.value = defaultOutputDir;
+  
+  addToLog('info', 'Application initialized');
+  addToLog('info', `Default input directory: ${defaultInputDir}`);
+  addToLog('info', `Default output directory: ${defaultOutputDir}`);
+  
   // Load settings
   try {
     const settings = await window.api.getSettings();
     
     if (settings?.lastInputDir) {
+      // Only override if the user has previously selected a directory
       imageInputDir.value = settings.lastInputDir;
       videoInputDir.value = settings.lastInputDir;
     }
     
     if (settings?.lastOutputDir) {
+      // Only override if the user has previously selected a directory
       imageOutputDir.value = settings.lastOutputDir;
       videoOutputDir.value = settings.lastOutputDir;
     }

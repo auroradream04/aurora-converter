@@ -27,7 +27,7 @@ class Settings {
     
     // Default settings
     return {
-      windowBounds: { width: 1200, height: 900 },
+      windowBounds: { width: 1200, height: 800 },
       darkMode: true,
       lastInputDir: app.getPath('documents'),
       lastOutputDir: app.getPath('documents')
@@ -75,7 +75,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     ...windowBounds,
     minWidth: 1000,
-    minHeight: 750,
+    minHeight: 700,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -335,6 +335,14 @@ ipcMain.handle('get-settings', () => {
     lastInputDir: settings.get('lastInputDir'),
     lastOutputDir: settings.get('lastOutputDir')
   };
+});
+
+// Get app path for default directories
+ipcMain.handle('get-app-path', () => {
+  const appPath = app.isPackaged 
+    ? path.dirname(app.getPath('exe'))
+    : path.resolve('./');
+  return appPath;
 });
 
 // Open folder in explorer/finder
