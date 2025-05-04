@@ -7,6 +7,7 @@ import ffmpegPath from 'ffmpeg-static';
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
 const mkdir = promisify(fs.mkdir);
+const copyFile = promisify(fs.copyFile);
 
 // ANSI color codes for console output
 const colors = {
@@ -38,6 +39,7 @@ export class VideoCompressor {
   private processedFiles: Set<string> = new Set();
   private compressedVideos: number = 0;
   private skippedFiles: number = 0;
+  private copiedFiles: number = 0;
   private errorFiles: number = 0;
   private originalTotalSize: number = 0;
   private finalTotalSize: number = 0;
@@ -284,9 +286,35 @@ export class VideoCompressor {
   }
 
   private async copyNonVideoFile(filePath: string): Promise<void> {
-    this.log.warning(`Skipping non-video file: ${filePath}`);
-    this.skippedFiles++;
-    this.processedFiles.add(filePath);
+    try {
+      // Calculate the relative path and create the output path
+      const relativePath = path.relative(this.inputDir, path.dirname(filePath));
+      const outputDirPath = path.join(this.outputDir, relativePath);
+      const fileName = path.basename(filePath);
+      const outputFilePath = path.join(outputDirPath, fileName);
+      
+      if (this.debug) {
+        this.log.info(`Processing non-video file: ${filePath}`);
+        this.log.detail(`Output path: ${outputFilePath}`);
+      }
+      
+      // Ensure output directory exists
+      await this.ensureOutputDirectory(outputDirPath);
+      
+      const originalSize = fs.statSync(filePath).size;
+      this.originalTotalSize += originalSize;
+      this.finalTotalSize += originalSize; // Same size as we're just copying
+      
+      // Copy the file using promisify
+      await copyFile(filePath, outputFilePath);
+      
+      this.log.success(`Copied non-video file: ${filePath} to ${outputFilePath}`);
+      this.copiedFiles++;
+      this.processedFiles.add(filePath);
+    } catch (error) {
+      this.log.error(`Copying file ${filePath}: ${error}`);
+      this.errorFiles++;
+    }
   }
 
   private async processFile(filePath: string): Promise<void> {
@@ -366,6 +394,7 @@ export class VideoCompressor {
       this.processedFiles.clear();
       this.compressedVideos = 0;
       this.skippedFiles = 0;
+      this.copiedFiles = 0;
       this.errorFiles = 0;
       this.originalTotalSize = 0;
       this.finalTotalSize = 0;
@@ -399,8 +428,12 @@ export class VideoCompressor {
       this.log.header('Compression Complete');
       this.log.info(`Processed ${this.compressedVideos} videos in ${processingTime} seconds`);
       
+      if (this.copiedFiles > 0) {
+        this.log.success(`Copied ${this.copiedFiles} non-video files`);
+      }
+      
       if (this.skippedFiles > 0) {
-        this.log.warning(`Skipped ${this.skippedFiles} non-video files`);
+        this.log.warning(`Skipped ${this.skippedFiles} files`);
       }
       
       if (this.errorFiles > 0) {
@@ -421,6 +454,7 @@ export class VideoCompressor {
       return {
         compressedVideos: this.compressedVideos,
         skippedFiles: this.skippedFiles,
+        copiedFiles: this.copiedFiles,
         errorFiles: this.errorFiles,
         originalTotalSize: this.originalTotalSize,
         finalTotalSize: this.finalTotalSize,
