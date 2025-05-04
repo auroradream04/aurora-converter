@@ -8,6 +8,7 @@
     "start": "npm run build && electron .",
     "dev": "tsc -w & electron .",
     "watch": "tsc -w",
+    "generate-icons": "electron-icon-builder --input=./assets/icon.png --output=./assets",
     "package": "npm run build && electron-builder build --mac --win",
     "package-mac": "npm run build && electron-builder build --mac",
     "package-win": "npm run build && electron-builder build --win"
@@ -34,6 +35,7 @@
     "@types/node": "^20.11.24",
     "electron": "^30.5.1",
     "electron-builder": "^24.13.3",
+    "electron-icon-builder": "^2.0.1",
     "electron-store": "^10.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
@@ -44,6 +46,7 @@
     "files": [
       "dist/**/*",
       "assets/**/*",
+      "src/renderer/**/*",
       "!node_modules/sharp/vendor/**",
       "!node_modules/ffmpeg-static/ffmpeg",
       "!**/*.map"
@@ -54,20 +57,45 @@
         "to": "ffmpeg"
       }
     ],
+    "directories": {
+      "output": "release-builds"
+    },
     "mac": {
       "category": "public.app-category.utilities",
       "darkModeSupport": true,
-      "icon": "assets/icons/mac/icon.icns"
+      "icon": "assets/icons/mac/icon.icns",
+      "target": ["dmg", "zip"],
+      "hardenedRuntime": true
     },
     "win": {
       "target": [
-        "nsis"
+        "nsis", "portable"
       ],
       "icon": "assets/icons/win/icon.ico"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "installerIcon": "assets/icons/win/icon.ico"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
     }
   }
 }
