@@ -1,8 +1,10 @@
-# Aurora Image Converter - Output Directory
+# Aurora Image Converter - Input Directory
 
-Converted WebP images and copied files will appear in this directory.
+Place your images in this directory to convert them to WebP format.
 
-The directory structure from the input folder will be preserved.
+Supported input formats:
+- JPG/JPEG
+- PNG
+- GIF
 
-Note: You can safely delete the contents of this directory if needed.
-The converter can also clear this directory for you when running with the clear option. 
+The converter will preserve your directory structure in the output folder. 

@@ -9,10 +9,11 @@
     "dev": "ts-node src/main.ts",
     "watch": "tsc -w"
   },
-  "keywords": ["image", "converter", "webp", "sharp"],
+  "keywords": ["image", "converter", "webp", "sharp", "video", "compressor", "ffmpeg"],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "ffmpeg-static": "^5.2.0",
     "sharp": "^0.33.2"
   },
   "devDependencies": {
