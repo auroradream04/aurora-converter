@@ -602,4 +602,57 @@ ipcMain.handle('show-confirm-dialog', (_, options: { title: string, message: str
       }
     );
   });
+});
+
+ipcMain.handle('select-file', async (_, fileType: string) => {
+  if (!mainWindow) return null;
+  const filters = fileType === 'mp4' ? [{ name: 'MP4 Video', extensions: ['mp4'] }] : [];
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters
+  }) as unknown as { canceled: boolean; filePaths: string[] };
+  if (!result.canceled && result.filePaths.length > 0) {
+    return result.filePaths[0];
+  }
+  return null;
+});
+
+const ffmpegPath = require('ffmpeg-static');
+ipcMain.handle('convert-to-hls', async (_, options: { inputDir: string; outputDir: string; segmentDuration: number }) => {
+  const { inputDir, outputDir, segmentDuration } = options;
+  if (!inputDir || !outputDir) throw new Error('Input and output directories are required');
+  const path = require('path');
+  const fs = require('fs');
+  const { exec } = require('child_process');
+
+  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+  // Find all .mp4 files in inputDir (non-recursive)
+  const files = fs.readdirSync(inputDir).filter(f => f.toLowerCase().endsWith('.mp4'));
+  let converted = 0;
+  for (const file of files) {
+    const baseName = path.basename(file, path.extname(file));
+    const inputFile = path.join(inputDir, file);
+    const outFolder = path.join(outputDir, baseName);
+    if (!fs.existsSync(outFolder)) fs.mkdirSync(outFolder, { recursive: true });
+    const outputPlaylist = path.join(outFolder, 'output.m3u8');
+    const cmd = `"${ffmpegPath}" -i "${inputFile}" -codec: copy -start_number 0 -hls_time ${segmentDuration} -hls_list_size 0 -f hls "${outputPlaylist}"`;
+    try {
+      await new Promise((resolve, reject) => {
+        exec(cmd, (error, stdout, stderr) => {
+          if (error) {
+            console.error('Error running ffmpeg for HLS:', error);
+            reject(error);
+          } else {
+            resolve(true);
+          }
+        });
+      });
+      converted++;
+    } catch (e) {
+      // Log error but continue with next file
+      console.error(`Failed to convert ${file}:`, e);
+    }
+  }
+  return { converted };
 }); 

@@ -54,6 +54,12 @@ contextBridge.exposeInMainWorld(
     // Open folder in explorer/finder
     openExplorer: (path: string) => ipcRenderer.invoke('open-explorer', path),
     
+    // Select a file (for HLS input)
+    selectFile: (fileType: string) => ipcRenderer.invoke('select-file', fileType),
+    
+    // Convert MP4 to HLS (batch)
+    convertToHLS: (options: { inputDir: string; outputDir: string; segmentDuration: number }) => ipcRenderer.invoke('convert-to-hls', options),
+    
     // Listen for directory selection from menu
     onDirectorySelected: (callback: (data: { type: string, path: string }) => void) => {
       const subscription = (_event: any, data: { type: string, path: string }) => callback(data);

@@ -1,8 +1,10 @@
 // Elements
 const tabImages = document.getElementById('tab-images');
 const tabVideos = document.getElementById('tab-videos');
+const tabHLS = document.getElementById('tab-hls');
 const contentImages = document.getElementById('content-images');
 const contentVideos = document.getElementById('content-videos');
+const contentHLS = document.getElementById('content-hls');
 
 // Image converter inputs
 const imageInputDir = document.getElementById('image-input-dir');
@@ -50,6 +52,16 @@ const openImageOutput = document.getElementById('open-image-output');
 const openVideoInput = document.getElementById('open-video-input');
 const openVideoOutput = document.getElementById('open-video-output');
 
+// New HLS converter inputs
+const hlsInputDir = document.getElementById('hls-input-dir');
+const hlsOutputDir = document.getElementById('hls-output-dir');
+const hlsSegmentDuration = document.getElementById('hls-segment-duration');
+const browseHLSInput = document.getElementById('browse-hls-input');
+const browseHLSOutput = document.getElementById('browse-hls-output');
+const openHLSInput = document.getElementById('open-hls-input');
+const openHLSOutput = document.getElementById('open-hls-output');
+const startHLSConversion = document.getElementById('start-hls-conversion');
+
 // Tab switching
 tabImages.addEventListener('click', () => {
   tabImages.classList.add('active');
@@ -63,6 +75,15 @@ tabVideos.addEventListener('click', () => {
   tabVideos.classList.add('active');
   contentImages.classList.remove('active');
   contentVideos.classList.add('active');
+});
+
+tabHLS.addEventListener('click', () => {
+  tabImages.classList.remove('active');
+  tabVideos.classList.remove('active');
+  tabHLS.classList.add('active');
+  contentImages.classList.remove('active');
+  contentVideos.classList.remove('active');
+  contentHLS.classList.add('active');
 });
 
 // Sliders
@@ -129,6 +150,22 @@ browseVideoOutput.addEventListener('click', async () => {
   if (dir) {
     videoOutputDir.value = dir;
     addToLog('info', `Video output directory set to: ${dir}`);
+  }
+});
+
+browseHLSInput.addEventListener('click', async () => {
+  const dir = await window.api.selectDirectory('input');
+  if (dir) {
+    hlsInputDir.value = dir;
+    addToLog('info', `HLS input directory set to: ${dir}`);
+  }
+});
+
+browseHLSOutput.addEventListener('click', async () => {
+  const dir = await window.api.selectDirectory('output');
+  if (dir) {
+    hlsOutputDir.value = dir;
+    addToLog('info', `HLS output directory set to: ${dir}`);
   }
 });
 
@@ -259,6 +296,39 @@ startVideoCompression.addEventListener('click', async () => {
   }
 });
 
+startHLSConversion.addEventListener('click', async () => {
+  if (!hlsInputDir.value) {
+    addToLog('error', 'Please select an input directory');
+    return;
+  }
+  if (!hlsOutputDir.value) {
+    addToLog('error', 'Please select an output directory');
+    return;
+  }
+  setButtonsEnabled(false);
+  showProgress();
+  try {
+    addToLog('info', 'Starting HLS batch conversion...');
+    const options = {
+      inputDir: hlsInputDir.value,
+      outputDir: hlsOutputDir.value,
+      segmentDuration: parseInt(hlsSegmentDuration.value)
+    };
+    const result = await window.api.convertToHLS(options);
+    updateProgress(100, 'HLS batch conversion complete!');
+    addToLog('success', `HLS batch conversion complete: ${result?.converted || 0} files`);
+    openOutputDir.style.display = 'block';
+    openOutputDir.onclick = () => {
+      window.api.openExplorer(hlsOutputDir.value);
+    };
+  } catch (error) {
+    addToLog('error', `Error: ${error.message || error}`);
+    updateProgress(0, 'HLS conversion failed');
+  } finally {
+    setButtonsEnabled(true);
+  }
+});
+
 // Helpers
 function setButtonsEnabled(enabled) {
   startImageConversion.disabled = !enabled;
@@ -267,13 +337,17 @@ function setButtonsEnabled(enabled) {
   browseImageOutput.disabled = !enabled;
   browseVideoInput.disabled = !enabled;
   browseVideoOutput.disabled = !enabled;
+  browseHLSInput.disabled = !enabled;
+  browseHLSOutput.disabled = !enabled;
   
   if (!enabled) {
     startImageConversion.classList.add('disabled');
     startVideoCompression.classList.add('disabled');
+    startHLSConversion.classList.add('disabled');
   } else {
     startImageConversion.classList.remove('disabled');
     startVideoCompression.classList.remove('disabled');
+    startHLSConversion.classList.remove('disabled');
   }
 }
 
@@ -357,6 +431,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   imageOutputDir.value = defaultOutputDir;
   videoInputDir.value = defaultInputDir;
   videoOutputDir.value = defaultOutputDir;
+  hlsInputDir.value = defaultInputDir;
+  hlsOutputDir.value = defaultOutputDir;
   
   addToLog('info', 'Application initialized');
   addToLog('info', `Default input directory: ${defaultInputDir}`);
@@ -370,12 +446,14 @@ window.addEventListener('DOMContentLoaded', async () => {
       // Only override if the user has previously selected a directory
       imageInputDir.value = settings.lastInputDir;
       videoInputDir.value = settings.lastInputDir;
+      hlsInputDir.value = settings.lastInputDir;
     }
     
     if (settings?.lastOutputDir) {
       // Only override if the user has previously selected a directory
       imageOutputDir.value = settings.lastOutputDir;
       videoOutputDir.value = settings.lastOutputDir;
+      hlsOutputDir.value = settings.lastOutputDir;
     }
   } catch (error) {
     console.error('Error loading settings:', error);
@@ -406,5 +484,15 @@ openVideoInput.addEventListener('click', () => {
 openVideoOutput.addEventListener('click', () => {
   if (videoOutputDir.value) {
     window.api.openExplorer(videoOutputDir.value);
+  }
+});
+openHLSInput.addEventListener('click', () => {
+  if (hlsInputDir.value) {
+    window.api.openExplorer(hlsInputDir.value);
+  }
+});
+openHLSOutput.addEventListener('click', () => {
+  if (hlsOutputDir.value) {
+    window.api.openExplorer(hlsOutputDir.value);
   }
 }); 

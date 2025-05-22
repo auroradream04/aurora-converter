@@ -17,6 +17,7 @@
     <div class="tabs">
       <button id="tab-images" class="tab-button active">Image Converter</button>
       <button id="tab-videos" class="tab-button">Video Compressor</button>
+      <button id="tab-hls" class="tab-button">HLS Converter</button>
     </div>
 
     <div class="main-content">
@@ -109,6 +110,32 @@
           </div>
           
           <button id="start-video-compression" class="start-button">Start Compression</button>
+        </div>
+
+        <!-- HLS Converter Tab -->
+        <div id="content-hls" class="tab-content">
+          <h2>Convert MP4 to HLS (m3u8 + ts)</h2>
+          <div class="input-group">
+            <label for="hls-input-dir">Input Directory:</label>
+            <div class="input-with-button">
+              <input type="text" id="hls-input-dir" placeholder="Select input directory..." readonly>
+              <button id="browse-hls-input" class="browse-button">Browse</button>
+              <button id="open-hls-input" class="browse-button">Open</button>
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="hls-output-dir">Output Directory:</label>
+            <div class="input-with-button">
+              <input type="text" id="hls-output-dir" placeholder="Select output directory..." readonly>
+              <button id="browse-hls-output" class="browse-button">Browse</button>
+              <button id="open-hls-output" class="browse-button">Open</button>
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="hls-segment-duration">Segment Duration (seconds):</label>
+            <input type="number" id="hls-segment-duration" min="1" max="60" value="10" class="slider-value-input">
+          </div>
+          <button id="start-hls-conversion" class="start-button">Start HLS Conversion</button>
         </div>
       </div>
       
