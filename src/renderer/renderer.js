@@ -44,6 +44,12 @@ const resultsSavedPercent = document.getElementById('results-saved-percent');
 const log = document.getElementById('log');
 const clearLog = document.getElementById('clear-log');
 
+// New 'Open' buttons
+const openImageInput = document.getElementById('open-image-input');
+const openImageOutput = document.getElementById('open-image-output');
+const openVideoInput = document.getElementById('open-video-input');
+const openVideoOutput = document.getElementById('open-video-output');
+
 // Tab switching
 tabImages.addEventListener('click', () => {
   tabImages.classList.add('active');
@@ -379,4 +385,26 @@ window.addEventListener('DOMContentLoaded', async () => {
 // Clear log
 clearLog.addEventListener('click', () => {
   log.innerHTML = '';
+});
+
+// New 'Open' button event listeners
+openImageInput.addEventListener('click', () => {
+  if (imageInputDir.value) {
+    window.api.openExplorer(imageInputDir.value);
+  }
+});
+openImageOutput.addEventListener('click', () => {
+  if (imageOutputDir.value) {
+    window.api.openExplorer(imageOutputDir.value);
+  }
+});
+openVideoInput.addEventListener('click', () => {
+  if (videoInputDir.value) {
+    window.api.openExplorer(videoInputDir.value);
+  }
+});
+openVideoOutput.addEventListener('click', () => {
+  if (videoOutputDir.value) {
+    window.api.openExplorer(videoOutputDir.value);
+  }
 }); 
