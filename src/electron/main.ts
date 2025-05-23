@@ -636,10 +636,28 @@ ipcMain.handle('convert-to-hls', async (_, options: { inputDir: string; outputDi
     const outFolder = path.join(outputDir, baseName);
     if (!fs.existsSync(outFolder)) fs.mkdirSync(outFolder, { recursive: true });
     const outputPlaylist = path.join(outFolder, 'output.m3u8');
-    const cmd = `"${ffmpegPath}" -i "${inputFile}" -codec: copy -start_number 0 -hls_time ${segmentDuration} -hls_list_size 0 -f hls "${outputPlaylist}"`;
+    const thumbnailPath = path.join(outFolder, 'thumbnail.webp');
+
+    // First, generate the thumbnail
+    const thumbnailCmd = `"${ffmpegPath}" -i "${inputFile}" -vframes 1 -vf "scale=320:-1" -c:v libwebp -lossless 0 -compression_level 6 -q:v 50 -loop 0 -preset picture -an -vsync 0 "${thumbnailPath}"`;
+    
     try {
+      // Generate thumbnail
       await new Promise((resolve, reject) => {
-        exec(cmd, (error, stdout, stderr) => {
+        exec(thumbnailCmd, (error, stdout, stderr) => {
+          if (error) {
+            console.error('Error generating thumbnail:', error);
+            reject(error);
+          } else {
+            resolve(true);
+          }
+        });
+      });
+
+      // Then convert to HLS
+      const hlsCmd = `"${ffmpegPath}" -i "${inputFile}" -codec: copy -start_number 0 -hls_time ${segmentDuration} -hls_list_size 0 -f hls "${outputPlaylist}"`;
+      await new Promise((resolve, reject) => {
+        exec(hlsCmd, (error, stdout, stderr) => {
           if (error) {
             console.error('Error running ffmpeg for HLS:', error);
             reject(error);
