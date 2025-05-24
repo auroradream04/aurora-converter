@@ -27,6 +27,7 @@ export interface ConverterOptions {
   inputDir?: string;
   outputDir?: string;
   clearOutputDir?: boolean;
+  convertTo?: 'webp' | 'png';
 }
 
 export class ImageConverter {
@@ -35,6 +36,7 @@ export class ImageConverter {
   private inputDir: string;
   private outputDir: string;
   private clearOutputDir: boolean;
+  private convertTo: 'webp' | 'png';
   private processedFiles: Set<string> = new Set();
   private convertedImages: number = 0;
   private copiedFiles: number = 0;
@@ -55,6 +57,7 @@ export class ImageConverter {
     this.inputDir = options.inputDir ?? path.join(process.cwd(), 'input');
     this.outputDir = options.outputDir ?? path.join(process.cwd(), 'output');
     this.clearOutputDir = options.clearOutputDir ?? false;
+    this.convertTo = options.convertTo ?? 'webp';
   }
 
   private log = {
@@ -110,6 +113,11 @@ export class ImageConverter {
   private isWebP(file: string): boolean {
     const ext = path.extname(file).toLowerCase();
     return ext === '.webp';
+  }
+
+  private isPNG(file: string): boolean {
+    const ext = path.extname(file).toLowerCase();
+    return ext === '.png';
   }
 
   private getBaseName(filePath: string): string {
@@ -310,41 +318,65 @@ export class ImageConverter {
   }
 
   private async copyWebP(filePath: string): Promise<void> {
+    await this.copyNonImageFile(filePath);
+  }
+
+  private async convertToPNG(filePath: string): Promise<void> {
+    this.currentImageIndex++;
+    
+    const fileName = path.basename(filePath);
+    const relativePath = path.relative(this.inputDir, path.dirname(filePath));
+    const outputDirPath = path.join(this.outputDir, relativePath);
+    
+    // Ensure output directory exists
+    await this.ensureOutputDirectory(outputDirPath);
+    
+    const ext = path.extname(fileName);
+    const baseName = path.basename(fileName, ext);
+    const pngPath = path.join(outputDirPath, `${baseName}.png`);
+    
+    if (this.debug) {
+      this.log.info(`Processing image file: ${filePath}`);
+      this.log.detail(`Output PNG path: ${pngPath}`);
+    }
+    
     try {
-      // Calculate the relative path and create the output path
-      const relativePath = path.relative(this.inputDir, path.dirname(filePath));
-      const outputDirPath = path.join(this.outputDir, relativePath);
-      const fileName = path.basename(filePath);
-      const outputFilePath = path.join(outputDirPath, fileName);
-      
-      if (this.debug) {
-        this.log.info(`Processing WebP file: ${filePath}`);
-        this.log.detail(`Output path: ${outputFilePath}`);
-      }
-      
-      // Ensure output directory exists
-      await this.ensureOutputDirectory(outputDirPath);
-      
-      // Skip if the file is in the output directory already
-      if (fs.existsSync(outputFilePath)) {
-        this.log.warning(`Skipping existing WebP file: ${fileName}`);
-        this.skippedFiles++;
-        this.processedFiles.add(filePath);
-        return;
-      }
-      
+      this.processedFiles.add(filePath);
       const originalSize = fs.statSync(filePath).size;
       this.originalTotalSize += originalSize;
-      this.finalTotalSize += originalSize; // Same size as we're just copying
       
-      // Copy the WebP file
-      await copyFile(filePath, outputFilePath);
-      this.log.success(`Copied WebP file: ${filePath} to ${outputFilePath}`);
-      this.copiedFiles++;
-      this.processedFiles.add(filePath);
+      // Use sharp to convert WebP to PNG
+      const image = sharp(filePath);
+      const metadata = await image.metadata();
+
+      // Resize if width exceeds maxWidth
+      if (metadata.width && metadata.width > this.maxWidth) {
+        image.resize(this.maxWidth);
+      }
+
+      // Convert to PNG with maximum quality
+      await image.png({ quality: 100 }).toFile(pngPath);
+      
+      const newSize = fs.statSync(pngPath).size;
+      this.finalTotalSize += newSize;
+      const sizeChange = ((newSize - originalSize) / originalSize * 100).toFixed(2);
+      
+      this.log.success(`Converted ${filePath} to PNG`);
+      this.log.detail(`Output saved to: ${pngPath}`);
+      
+      if (newSize < originalSize) {
+        this.log.detail(`Size reduction: ${Math.abs(parseFloat(sizeChange))}% (${this.formatBytes(originalSize)} → ${this.formatBytes(newSize)})`);
+      } else {
+        this.log.detail(`Size increase: ${sizeChange}% (${this.formatBytes(originalSize)} → ${this.formatBytes(newSize)})`);
+      }
+      
+      this.convertedImages++;
     } catch (error) {
-      this.log.error(`Copying WebP file ${filePath}: ${error}`);
+      this.log.error(`Converting ${filePath}: ${error}`);
       this.errorFiles++;
+      
+      // If conversion fails, copy the original file
+      await this.copyNonImageFile(filePath);
     }
   }
 
@@ -382,12 +414,28 @@ export class ImageConverter {
   private async processFile(filePath: string): Promise<void> {
     const fileName = path.basename(filePath);
     
-    if (this.isImage(fileName)) {
-      await this.convertToWebP(filePath);
-    } else if (this.isWebP(fileName)) {
-      await this.copyWebP(filePath);
-    } else {
-      await this.copyNonImageFile(filePath);
+    if (this.convertTo === 'webp') {
+      // Convert to WebP
+      if (this.isImage(fileName)) {
+        await this.convertToWebP(filePath);
+      } else if (this.isWebP(fileName)) {
+        await this.copyWebP(filePath);
+      } else {
+        await this.copyNonImageFile(filePath);
+      }
+    } else if (this.convertTo === 'png') {
+      // Convert to PNG
+      if (this.isWebP(fileName)) {
+        await this.convertToPNG(filePath);
+      } else if (this.isPNG(fileName)) {
+        // Copy PNG files directly
+        await this.copyNonImageFile(filePath);
+      } else if (this.isImage(fileName)) {
+        // For other image types, convert to PNG
+        await this.convertToPNG(filePath);
+      } else {
+        await this.copyNonImageFile(filePath);
+      }
     }
   }
 
@@ -492,6 +540,7 @@ export class ImageConverter {
     this.log.info(`Output directory: ${this.outputDir}`);
     this.log.info(`Quality: ${this.quality}`);
     this.log.info(`Max width: ${this.maxWidth}`);
+    this.log.info(`Convert to: ${this.convertTo}`);
     this.log.info(`Clear output directory: ${this.clearOutputDir ? 'Yes' : 'No'}`);
     console.log('[DEBUG] clearOutputDir value:', this.clearOutputDir, 'type:', typeof this.clearOutputDir);
     

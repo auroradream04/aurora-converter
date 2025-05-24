@@ -9,6 +9,7 @@ const contentHLS = document.getElementById('content-hls');
 // Image converter inputs
 const imageInputDir = document.getElementById('image-input-dir');
 const imageOutputDir = document.getElementById('image-output-dir');
+const imageFormat = document.getElementById('image-format');
 const imageQuality = document.getElementById('image-quality');
 const imageQualityInput = document.getElementById('image-quality-input');
 const imageMaxWidth = document.getElementById('image-max-width');
@@ -201,7 +202,8 @@ startImageConversion.addEventListener('click', async () => {
       outputDir: imageOutputDir.value,
       clearOutput: false, // We've already cleared it directly
       quality: parseInt(imageQuality.value),
-      maxWidth: parseInt(imageMaxWidth.value)
+      maxWidth: parseInt(imageMaxWidth.value),
+      convertTo: imageFormat.value
     };
     
     console.log('Image conversion options:', options);
@@ -210,11 +212,17 @@ startImageConversion.addEventListener('click', async () => {
     
     // Handle completion
     updateProgress(100, 'Conversion complete!');
-    addToLog('success', `Converted ${result?.convertedImages || 0} images`);
+    
+    // Update success message based on format
+    if (imageFormat.value === 'webp') {
+      addToLog('success', `Converted ${result?.convertedImages || 0} images to WebP`);
+    } else {
+      addToLog('success', `Converted ${result?.convertedImages || 0} images to PNG`);
+    }
     
     if (result?.originalTotalSize && result?.finalTotalSize) {
       const savedPercent = ((result.originalTotalSize - result.finalTotalSize) / result.originalTotalSize * 100).toFixed(2);
-      addToLog('success', `Size reduction: ${formatBytes(result.originalTotalSize)} → ${formatBytes(result.finalTotalSize)} (${savedPercent}% saved)`);
+      addToLog('success', `Size change: ${formatBytes(result.originalTotalSize)} → ${formatBytes(result.finalTotalSize)} (${savedPercent}% ${parseFloat(savedPercent) >= 0 ? 'saved' : 'increased'})`);
       
       // Update results UI
       showResults(result.convertedImages, result.originalTotalSize, result.finalTotalSize, savedPercent);

@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld(
       clearOutput: boolean;
       quality: number;
       maxWidth: number;
+      convertTo?: 'webp' | 'png';
     }) => {
       console.log('[PRELOAD] convertImages called with options:', options);
       console.log('[PRELOAD] clearOutput:', options.clearOutput, 'type:', typeof options.clearOutput);

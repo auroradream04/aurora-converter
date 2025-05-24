@@ -25,7 +25,7 @@
       <div class="left-column">
         <!-- Image Converter Tab -->
         <div id="content-images" class="tab-content active">
-          <h2>Convert Images to WebP</h2>
+          <h2>Convert Images to WebP/PNG</h2>
           
           <div class="input-group">
             <label for="image-input-dir">Input Directory:</label>
@@ -43,6 +43,14 @@
               <button id="browse-image-output" class="browse-button">Browse</button>
               <button id="open-image-output" class="browse-button">Open</button>
             </div>
+          </div>
+          
+          <div class="input-group">
+            <label for="image-format">Output Format:</label>
+            <select id="image-format" class="select">
+              <option value="webp" selected>WebP (smaller size)</option>
+              <option value="png">PNG (better compatibility)</option>
+            </select>
           </div>
           
           <div class="input-group">

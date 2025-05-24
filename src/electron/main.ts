@@ -450,7 +450,8 @@ ipcMain.handle('convert-images', async (_, options) => {
       outputDir: options.outputDir,
       clearOutput: options.clearOutput,
       quality: options.quality,
-      maxWidth: options.maxWidth
+      maxWidth: options.maxWidth,
+      convertTo: options.convertTo
     });
     
     // NOTE: We don't clear the directory here anymore - the renderer will call 'clear-directory' directly
@@ -460,7 +461,8 @@ ipcMain.handle('convert-images', async (_, options) => {
       outputDir: options.outputDir,
       clearOutputDir: false, // Always false, we clear directory separately
       quality: options.quality,
-      maxWidth: options.maxWidth
+      maxWidth: options.maxWidth,
+      convertTo: options.convertTo
     });
 
     // Create a channel for progress updates
